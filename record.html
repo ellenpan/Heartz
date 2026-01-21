@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Domine:wght@400..700&display=swap" rel="stylesheet">
+
+  <title>Heartz</title>
+
+  <style>
+    :root {
+      --nav-height: 56px;
+      --bg: #000000;
+      --fg: #ffffff;
+      --bg-video-opacity: 0.3; /* control video opacity here */
+
+      /* Button video texture brightness controls */
+      --record-default-brightness: 0.72;
+      --record-hover-brightness: 1;
+      --record-transition-duration: 220ms;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding-top: var(--nav-height); /* prevents overlap with nav */
+      color: white;
+      position: relative;
+      z-index: 1; /* ensure content sits above the video */
+    }
+
+    /* ---------- BACKGROUND VIDEO ---------- */
+    /* place the video behind everything, fullscreen */
+    #bgVideo {
+      position: fixed;
+      inset: 0; /* top:0; right:0; bottom:0; left:0; */
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* crop to cover viewport */
+      opacity: var(--bg-video-opacity);
+      pointer-events: none; /* allow clicks through the video */
+      z-index: 0; /* sits behind page content (which has z-index:1) */
+      transition: opacity 400ms ease;
+    }
+
+    /* ---------- NAV BAR ---------- */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: var(--bg);
+      z-index: 1000; /* stays on top of video */
+      border-bottom: 1px solid rgba(255, 255, 255, 0.283);
+    }
+
+    nav .brand {
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    nav .brand img {
+      height: 40px;       /* adjust to taste */
+      width: auto;
+      display: block;
+    }
+
+    nav .links {
+      display: flex;
+      gap: 16px;
+    }
+
+    nav a {
+      color: var(--fg);
+      text-decoration: none;
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    nav a:hover {
+      opacity: 1;
+    }
+
+    /* ---------- CONTENT ---------- */
+    .title {
+      font-family: "Domine", serif;
+      text-transform: lowercase;
+      font-weight: 700;
+      color: white;
+      text-align: center;
+      margin-bottom: 20px;
+      z-index: 2;
+    }
+
+    #visualizerCanvas {
+      background: transparent;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+      z-index: 2;
+    }
+
+    /* ---------- RECORD BUTTON (video texture) ---------- */
+    #recordButton {
+      margin-top: 40px;
+      background: transparent;
+      color: white;
+      border: 1px solid #bfbfbf;   /* gray border */
+      padding: 20px 40px;
+      font-size: 20px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: color 0.3s, box-shadow 0.3s;
+      z-index: 2;
+
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    #recordButton .btn-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: brightness(var(--record-default-brightness));
+      transition: filter var(--record-transition-duration) ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #recordButton .btn-text {
+      position: relative;
+      z-index: 1;
+    }
+
+    #recordButton:hover {
+      color: #ffffff;
+    }
+
+    #recordButton.recording {
+      color: #ffffff;
+      box-shadow: none; /* removed pulse/glow */
+      animation: none;  /* removed pulse animation */
+    }
+
+    #recordButton.continue {
+      color: #ffffff;
+      box-shadow: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Fullscreen background video (muted so browsers allow autoplay) -->
+  <video id="bgVideo" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+    <source src="bg.mp4" type="video/mp4">
+    <!-- fallback: poster image -->
+    Your browser does not support the video tag.
+  </video>
+
+  <nav role="navigation" aria-label="Main navigation">
+    <div class="brand">
+      <img src="logo.png" alt="Heartz logo">
+    </div>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="math.html">How it works</a>
+      <a href="https://ellenpan.com" target="_blank" rel="noopener noreferrer">
+        ellenpan.com
+      </a>
+    </div>
+  </nav>
+
+  <canvas id="visualizerCanvas" width="400" height="400"></canvas>
+
+  <button id="recordButton">
+    <video
+      id="recordBtnVideo"
+      class="btn-bg"
+      muted
+      playsinline
+      preload="metadata"
+      tabindex="-1"
+      aria-hidden="true">
+      <source src="button.webm" type="video/webm">
+    </video>
+    <span class="btn-text">Record</span>
+  </button>
+
+  <script src="script.js"></script>
+
+  <script>
+    const bgVideo = document.getElementById('bgVideo');
+
+    // Some browsers need this after playback starts
+    bgVideo.addEventListener('loadedmetadata', () => {
+      bgVideo.playbackRate = 0.7;
+    });
+  </script>
+
+  <script>
+    (function () {
+      const btn = document.getElementById('recordButton');
+      const video = document.getElementById('recordBtnVideo');
+
+      function initVideo() {
+        video.pause();
+        video.muted = true;
+        video.loop = true;
+
+        if (video.readyState >= 1) {
+          try { video.currentTime = 0; } catch {}
+        } else {
+          video.addEventListener('loadedmetadata', () => {
+            try { video.currentTime = 0; } catch {}
+          }, { once:true });
+        }
+
+        video.style.filter = 'brightness(var(--record-default-brightness))';
+      }
+
+      function playBright() {
+        video.style.filter = 'brightness(var(--record-hover-brightness))';
+        video.play().catch(()=>{});
+      }
+
+      function pauseDark() {
+        if (
+          btn.classList.contains('recording') ||
+          btn.classList.contains('continue')
+        ) return; // 🚫 never pause during active states
+
+        video.pause();
+        try { video.currentTime = 0; } catch {}
+        video.style.filter = 'brightness(var(--record-default-brightness))';
+      }
+
+
+      function syncToState() {
+        // If recording/continue classes are present (set by script.js), keep the video playing bright.
+        if (btn.classList.contains('recording') || btn.classList.contains('continue')) {
+          playBright();
+        } else {
+          // Otherwise only play on hover/focus, and stay dark at rest.
+          if (btn.matches(':hover') || document.activeElement === btn) playBright();
+          else pauseDark();
+        }
+      }
+
+      btn.addEventListener('mouseenter', syncToState);
+      btn.addEventListener('mouseleave', syncToState);
+      btn.addEventListener('focusin', syncToState);
+      btn.addEventListener('focusout', syncToState);
+
+      // Also brighten while pressed/touched
+      btn.addEventListener('pointerdown', syncToState);
+      btn.addEventListener('pointerup', syncToState);
+      btn.addEventListener('pointercancel', syncToState);
+
+      // Watch for script.js toggling classes like "recording" / "continue"
+      const observer = new MutationObserver(syncToState);
+      observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
+
+      initVideo();
+      syncToState();
+    })();
+  </script>
+
+</body>
+</html>

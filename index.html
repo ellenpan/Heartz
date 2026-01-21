@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Heartz — The gift of your voice</title>
+
+  <style>
+    :root{
+      --bg:#000000;
+      --fg:#fff;
+      --muted: rgba(255,255,255,0.65);
+      --nav-height:60px;
+
+      --cta-default-brightness: 0.6;
+      --cta-hover-brightness: 1;
+      --cta-transition-duration: 220ms;
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* ================= NAV ================= */
+    nav {
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      height:var(--nav-height);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 18px;
+      box-sizing:border-box;
+      background:var(--bg);
+      z-index:1000;
+      border-bottom:1px solid rgba(255,255,255,0.27);
+    }
+
+    nav .links {
+      display:flex;
+      gap:16px;
+      align-items:center;
+    }
+
+    nav a {
+      color:var(--fg);
+      text-decoration:none;
+      font-size:14px;
+      opacity:0.95;
+    }
+
+    /* ================= HERO GROUP (revision) ================= */
+    header {
+      padding-top: calc(var(--nav-height) + 6%);
+    }
+
+    /* page-width centers the main column so hero-group can be positioned inside it */
+    .page-width {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 24px;
+      box-sizing: border-box;
+    }
+
+    /* the single movable group containing logo + title + sub */
+    .hero-group {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      position: relative; 
+
+      /* keep the group inside the centered column and allow shifting */
+      margin-left: 35%;
+
+      box-sizing: border-box;
+      min-width: 0;
+    }
+
+    .hero-media {
+      position: absolute;   /* ← removes it from layout flow */
+      left: -35%;          /* ← horizontal offset from text */
+      top: 45%;
+      transform: translateY(-50%);
+      pointer-events: none; /* optional: clicks go through */
+    }
+
+    .hero-media video {
+      width: 220px;         /* size control */
+      max-width: 22vw;
+      min-width: 72px;
+      display: block;
+    }
+
+    .hero-text {
+      flex:1 1 auto;
+      min-width:0;
+      text-align:left;
+    }
+
+    .hero-text h1 {
+      margin:0 0 4px 0;
+      font-size:clamp(28px, 7vw, 100px);
+      line-height:1;
+      font-weight:700;
+    }
+
+    .hero-text p.sub {
+      margin:0;
+      font-size:clamp(14px, 2.2vw, 30px);
+      color:var(--muted);
+    }
+
+    /* ================= MAIN CONTENT ================= */
+    main {
+      margin-top:3%;
+      padding:0 5%;
+      box-sizing:border-box;
+      z-index: 1;
+      position: relative;
+    }
+
+    .card{
+      max-width:60%;
+      margin:0 auto;
+      text-align:left;
+      line-height:1.6;
+    }
+
+    .card p { margin:18px 0; font-size:14px; }
+    .card p.lead { font-size:14px; }
+
+    /* ================= CTA BUTTON ================= */
+    .cta {
+      display:inline-block;
+      margin-top:8px;
+      padding:12px 18px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.18);
+      color:var(--fg);
+      text-decoration:none;
+      font-weight:600;
+      cursor:pointer;
+      user-select:none;
+      position:relative;
+      overflow:hidden;
+      isolation:isolate;
+    }
+
+    .cta-bg {
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      width: 100%; 
+      height: 100%; 
+      transform: translate(-50%, -50%); 
+      object-fit: cover; /* start darkened (texture) */ 
+      filter: brightness(var(--cta-default-brightness)); 
+      transition: filter var(--cta-transition-duration) ease; 
+      pointer-events: none;
+
+      
+    }
+
+    .cta-text {
+      position:relative;
+      z-index:1;
+    }
+
+    .card a.inline {
+      color:var(--fg);
+      text-decoration:underline;
+    }
+
+    /* ================= RESPONSIVE ================= */
+    @media (max-width:520px){
+      .hero-group {
+        flex-direction:column;
+        gap:12px;
+        margin-left: 0;   /* cancel right-push on small screens */
+        padding-right:12px;
+      }
+
+      .hero-text {
+        text-align:center;
+      }
+
+      .card {
+        max-width:100%;
+      }
+    }
+
+    /* ===== Background video layer ===== */
+    .bg-video {
+      position: fixed;
+      top: var(--nav-height);   /* start below navbar */
+      left: 0;
+      width: 100%;
+      height: calc(100% - var(--nav-height));
+      object-fit: cover;
+      
+
+      opacity: 0.2;             /* 60% opacity */
+      z-index: 0;               /* behind content */
+      pointer-events: none;     /* never interfere with clicks */
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- Background video (behind content, below nav) -->
+  <video
+    class="bg-video"
+    autoplay
+    loop
+    muted
+    playsinline
+    aria-hidden="true">
+    <source src="bg.mp4" type="video/mp4">
+  </video>
+
+
+  <!-- NAV -->
+  <nav role="navigation">
+    <div></div>
+    <div class="links">
+      <a href="math.html">How it works</a>
+      <a href="https://ellenpan.com" target="_blank" rel="noopener noreferrer">ellenpan.com</a>
+    </div>
+  </nav>
+
+  <!-- HERO (rewritten to use the single movable group) -->
+  <header role="banner">
+    <div class="page-width">
+      <div class="hero-group" aria-label="Heartz logo and site title">
+        <div class="hero-media" aria-hidden="true">
+          <video
+            id="heroLogoVideo"
+            autoplay
+            loop
+            muted
+            playsinline>
+            <source src="logo_2.webm" type="video/webm">
+          </video>
+        </div>
+
+        <div class="hero-text">
+          <h1>Heartz</h1>
+          <p class="sub">Wear your voice.</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <article class="card">
+      <p class="lead">
+        There are always particular moments where the voice of someone special flickers through our minds. It may be a laugh, or the first time they said “I love you”, or a song you sang together while playing the guitar. It may be a voice that you will never hear again. Alternatively, perhaps there is something you’ve always wanted to say to them.
+      </p>
+
+      <p>
+        <a class="cta" href="record.html">
+          <video
+            id="ctaVideo"
+            class="cta-bg"
+            muted
+            playsinline
+            preload="metadata"
+            tabindex="-1">
+            <source src="button.webm" type="video/webm">
+          </video>
+          <span class="cta-text">Make it permanent with Heartz.</span>
+        </a>
+      </p>
+
+      <p>
+        Your audio will be captured as a waveform, which is transformed into a 3D-printable model. You can then customize it to be a pendant, necklace, or earrings—so that you may always wear this special message close to you.
+      </p>
+
+      <p>
+        Because each voice is unique, so is any 3D model you create. No audio or mesh is saved in this process; once you refresh the page, they will be gone forever.
+      </p>
+
+      <p>
+        If you’re interested in the math, check out how I built Heartz <a class="inline" href="math.html">here</a>.
+      </p>
+    </article>
+  </main>
+
+  <!-- SCRIPT -->
+  <script>
+    (function () {
+      const cta = document.querySelector('.cta');
+      const video = document.getElementById('ctaVideo');
+
+      function initVideo() {
+        video.pause();
+        video.muted = true;
+        video.loop = true;
+        if (video.readyState >= 1) {
+          try { video.currentTime = 0; } catch {}
+        } else {
+          video.addEventListener('loadedmetadata', () => {
+            try { video.currentTime = 0; } catch {}
+          }, { once:true });
+        }
+      }
+
+      function playBright() {
+        video.style.filter = 'brightness(var(--cta-hover-brightness))';
+        video.play().catch(()=>{});
+      }
+
+      function pauseDark() {
+        video.pause();
+        try { video.currentTime = 0; } catch {}
+        video.style.filter = 'brightness(var(--cta-default-brightness))';
+      }
+
+      cta.addEventListener('mouseenter', playBright);
+      cta.addEventListener('mouseleave', pauseDark);
+      cta.addEventListener('focusin', playBright);
+      cta.addEventListener('focusout', pauseDark);
+
+      initVideo();
+    })();
+
+
+    const bgVideo = document.querySelector('.bg-video');
+    if (bgVideo) {
+      bgVideo.addEventListener('loadedmetadata', () => {
+        bgVideo.playbackRate = 0.7;
+      });
+    }
+  </script>
+
+</body>
+</html>

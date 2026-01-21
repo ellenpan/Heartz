@@ -1,0 +1,1547 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wavy Donut Mesh (Script Tag Three.js)</title>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; background: #000000; overflow: hidden; }
+      #ui {
+        position: fixed;
+        top: calc(var(--nav-height) + 12px);
+        left: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        color: #fff;
+        font-size: 14px;
+        z-index: 10;
+        user-select: none;
+      }
+      #ui .col {
+        position: relative;
+      }
+
+      #ui .pill {
+        min-height: 36px;
+        padding: 8px 14px;          /* <- matches Customize visually */
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(8px);
+
+        width: fit-content;
+      }
+
+
+
+      #ui button {
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+      #ui button:hover { background: rgba(255,255,255,0.14); }
+      #ui button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      /* Customize panel */
+      #customPanel {
+        position: absolute;
+        top: 65px;              /* sits just under the Customize pill */
+        left: 0;
+
+        width: 280px;
+        padding: 12px;
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 16px;
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(8px);
+
+        display: none;
+
+        z-index: 20;            /* above pills */
+      }
+
+      #customPanel .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 10px 0;
+      }
+      #customPanel .row:first-child { margin-top: 0; }
+      #customPanel label {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      #customPanel .small {
+        font-size: 12px;
+        opacity: 0.9;
+      }
+      #customPanel input[type="range"] {
+        width: 160px;
+      }
+      #customPanel .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      #customPanel .actions button {
+        flex: 1;
+      }
+
+      /* Toggle */
+      .toggleRow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .toggle {
+        width: 44px;
+        height: 26px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.10);
+        position: relative;
+        cursor: pointer;
+        flex: 0 0 auto;
+      }
+      .toggleKnob {
+        width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.85);
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        transition: transform 160ms ease;
+      }
+      .toggle.on .toggleKnob { transform: translateX(18px); }
+
+      .navPill,
+      .exportPill {
+        cursor: pointer;
+        user-select: none;
+        text-align: center;
+      }
+
+      .navPill:hover,
+      .exportPill:hover {
+        background: rgba(255,255,255,0.14);
+      }
+
+
+
+      #error {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        max-width: 520px;
+        color: #ffb4b4;
+        font-size: 14px;
+        white-space: pre-wrap;
+        z-index: 10;
+      }
+      canvas { display: block; }
+
+      :root{
+        --bg:#000000;
+        --fg:#fff;
+        --nav-height:60px;
+      }
+
+      body {
+        padding-top: var(--nav-height);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+
+      /* Nav bar */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: var(--nav-height);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 18px;
+        box-sizing: border-box;
+        background: var(--bg);
+        z-index: 1000;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.283);
+      }
+
+      nav .brand {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      nav .brand img {
+        height: 40px;       /* adjust to taste */
+        width: auto;
+        display: block;
+      }
+
+      nav .links {
+        display: flex;
+        gap: 16px;
+      }
+
+      nav a {
+        color: var(--fg);
+        text-decoration: none;
+        font-size: 14px;
+        opacity: 0.95;
+      }
+
+
+
+
+      #loadingScreen{
+        position: fixed;
+        inset: 0;
+        z-index: 9999; /* above UI + canvas */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+      }
+
+      #loadingScreen.hidden{
+        display: none;
+      }
+
+      
+      #loadingScreen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+      }
+
+      #loadingScreen.hidden {
+        display: none;
+      }
+
+      #loadingVideo {
+        width: 200px;          /* adjust size as needed */
+        max-width: 60vw;
+        height: auto;
+        margin-bottom: 16px;
+      }
+
+      .loadingText {
+        color: #fff;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        font-size: 20px;
+        letter-spacing: 0.04em;
+        opacity: 0.9;
+      }
+
+      
+
+
+    </style>
+  </head>
+
+  <body>
+    <nav role="navigation" aria-label="Main navigation">
+      <div class="brand">
+        <img src="logo.png" alt="Heartz logo">
+      </div>
+      <div class="links">
+        <a href="index.html">Home</a>
+        <a href="math.html">How it works</a>
+        <a href="https://ellenpan.com" target="_blank" rel="noopener noreferrer">
+          ellenpan.com
+        </a>
+      </div>
+    </nav>
+
+
+    <div id="loadingScreen">
+      <video
+        id="loadingVideo"
+        src="loading.webm"
+        autoplay
+        loop
+        muted
+        playsinline
+      ></video>
+      <div class="loadingText">Loading…</div>
+    </div>
+
+
+
+
+
+    <div id="ui">
+      <!-- Left column: Customize toggle + panel -->
+      <div class="col">
+        <div class="pill toggleRow" id="customToggle">
+          <div class="toggle" id="toggleVisual" aria-label="Customize toggle" role="switch" aria-checked="false">
+            <div class="toggleKnob"></div>
+          </div>
+          <div>Customize</div>
+        </div>
+
+        <div id="customPanel">
+          <div class="row">
+            <label>
+              <input type="checkbox" id="addRingChk" />
+              <span>Add jump ring</span>
+            </label>
+          </div>
+
+          <div class="row">
+            <div>Rotate mesh</div>
+            <input type="range" id="meshRotZ" min="-180" max="180" step="1" value="0" />
+          </div>
+
+          <div class="row">
+            <div>Z value</div>
+            <input type="range" id="ringY" min="-1" max="1" step="0.001" value="0" />
+          </div>
+
+          <div class="row">
+            <div>Y value</div>
+            <input type="range" id="ringZ" min="-0.5" max="0.5" step="0.001" value="0" />
+          </div>
+
+          <div class="row">
+            <div>X value</div>
+            <input
+              type="range"
+              id="ringX"
+              min="-1"
+              max="1"
+              step="0.001"
+              value="0"
+            />
+          </div>
+
+          <div class="row">
+            <div>Jump ring rotation</div>
+            <input
+              type="range"
+              id="ringRotY"
+              min="-180"
+              max="180"
+              step="1"
+              value="0"
+            />
+          </div>
+
+          <div class="actions">
+            <button id="saveBtn">Save changes</button>
+            <button id="cancelBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: existing UI -->
+      <div class="col">
+        <div style="display:flex; gap:10px;">
+          <div class="pill navPill" id="backBtn">Restart</div>
+          <div class="pill exportPill" id="exportBtn">Download STL</div>
+
+        </div>
+      </div>
+    </div>
+
+    <div id="error"></div>
+
+    <!-- Three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/STLExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/EXRLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.js"></script>
+
+
+
+    <script>
+      // ============================================================================
+      // mesh.html (script-tag version)
+      // - Reads "waveformPoints" from localStorage
+      // - Builds a watertight solid
+      // - Inflates outward, Catmull–Clark subdivides, smooth shading
+      // - NEW: Customize toggle + jump ring controls
+      // ============================================================================
+      const errorEl = document.getElementById("error");
+      const backBtn = document.getElementById("backBtn");
+      const exportBtn = document.getElementById("exportBtn");
+
+      function showError(msg) { errorEl.textContent = msg || ""; }
+      
+      const loadingScreen = document.getElementById("loadingScreen");
+
+      function hideLoading() {
+        loadingScreen.classList.add("hidden");
+      }
+
+
+      backBtn.addEventListener("click", () => { window.location.href = "record.html"; });
+
+      // ---------------------------
+      // Customize UI hooks
+      // ---------------------------
+      const customToggle = document.getElementById("customToggle");
+      const toggleVisual = document.getElementById("toggleVisual");
+      const customPanel  = document.getElementById("customPanel");
+
+      const addRingChk = document.getElementById("addRingChk");
+      const meshRotZ   = document.getElementById("meshRotZ");
+      const ringX = document.getElementById("ringX");
+      const ringY      = document.getElementById("ringY");
+      const ringZ      = document.getElementById("ringZ");
+      const ringRotY = document.getElementById("ringRotY");
+
+      const saveBtn    = document.getElementById("saveBtn");
+      const cancelBtn  = document.getElementById("cancelBtn");
+
+      // ============================================================================
+      // Scene setup
+      // ============================================================================
+      const scene = new THREE.Scene();
+
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        200
+      );
+      camera.position.set(0, 2.2, 4.5);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x161616, 1);
+      renderer.outputEncoding = THREE.sRGBEncoding;
+
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const envRT = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04);
+      scene.environment = envRT.texture;
+
+      
+
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      
+      // exr
+      // Tone mapping helps HDR/EXR look correct
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+
+      // Load EXR as background (and environment if you want)
+      const exrLoader = new THREE.EXRLoader();
+      exrLoader.load(
+        "background.exr", // <-- put your .exr file next to this html, or change path
+        (tex) => {
+          tex.mapping = THREE.EquirectangularReflectionMapping;
+
+          // Background behind the mesh (UI stays on top)
+          scene.background = tex;
+
+
+          // EXR texture no longer needed after PMREM (optional cleanup)
+          // tex.dispose(); // only if you NEVER use scene.background = tex
+        },
+        undefined,
+        (err) => {
+          console.error("Failed to load EXR:", err);
+        }
+      );
+
+      function loadExrBackgroundThenStart() {
+        // keep RoomEnvironment reflections (already set)
+        // scene.environment = envRT.texture;  // you already do this
+
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+
+        // IMPORTANT: only proceed to build mesh after EXR finishes
+        const loader = new THREE.EXRLoader();
+        loader.load(
+          "background.exr", // <-- your EXR path
+          (tex) => {
+            tex.mapping = THREE.EquirectangularReflectionMapping;
+            scene.background = tex; // background only
+
+            // now build mesh and show the page
+            rebuildMesh();
+            hideLoading();
+          },
+          undefined,
+          (err) => {
+            console.error("EXR load failed:", err);
+
+            // Fallback: still show the mesh (no background) so user isn't stuck
+            rebuildMesh();
+            hideLoading();
+          }
+        );
+      }
+
+
+
+      // Lights
+      const yellowLight = new THREE.DirectionalLight(0xFFAA21, 2);
+      yellowLight.position.set(4, 4, 3);
+      scene.add(yellowLight);
+
+      const blueLight = new THREE.DirectionalLight(0x4658C7, 2);
+      blueLight.position.set(-5, 3, 3);
+      scene.add(blueLight);
+
+
+      // Mesh holders
+      let donutMesh = null;
+      let earringLoopMesh = null;
+
+      // Intro spin
+      let spinVelocity = 0;
+      let spinDamping = 0.96;
+      let spinActive = false;
+
+      // ============================================================================
+      // Parameters
+      // ============================================================================
+      const INNER_SCALE = 0.25;
+      const OUTER_Z_EXTREME = 0.4;
+      const INNER_Z_EXTREME = 0.1;
+      const THICKNESS = 0.1;
+      const HALF_THICKNESS = THICKNESS / 2;
+
+      // Jump ring (as requested)
+      const EARRING_LOOP_MAJOR = 0.1;
+      const EARRING_LOOP_TUBE  = 0.03;
+
+      // A small default lift so it sits slightly above the surface
+      const DEFAULT_RING_LIFT = 0;
+      const DEFAULT_RING_X = 0; // try ±0.1
+
+
+      // Inflate outward
+      const INFLATE_OUTWARD = 0.03;
+
+      // Pixels to units
+      const PIXELS_TO_UNITS = 1 / 100;
+
+      // Catmull–Clark levels
+      const CATMULL_CLARK_LEVELS = 4;
+
+      // ============================================================================
+      // Saved customization state (applies outside customize mode)
+      // - default: no ring
+      // ============================================================================
+      const saved = {
+        ringEnabled: false,
+        meshRotZDeg: 0,     // rotation about Z axis (center)
+        ringXOffset: 0,
+        ringYOffset: 0,     // +/- 0.3
+        ringZOffset: 0,     // +/- 0.1
+        ringRotYDeg: 0      // rotation about Y axis
+      };
+
+      // Working state while customizing (for cancel)
+      let customizing = false;
+      let snapshotBeforeCustomize = null;
+
+      // Anchor info computed during rebuild (local space of donutMesh)
+      let anchorPosLocal = null; // THREE.Vector3
+      let anchorOutDirLocal = null; // THREE.Vector3 (mostly radial-ish)
+
+      // Base ring position (local space) at the moment it is created in customize mode
+      let ringBasePosLocal = null;
+      let freezeRing = false;
+      let frozenRingWorldPos = new THREE.Vector3();
+      let frozenRingWorldRot = new THREE.Euler();
+
+
+      // ============================================================================
+      // Load points helpers
+      // ============================================================================
+      function load2DPoints() {
+        const raw = localStorage.getItem("waveformPoints");
+        if (!raw) return null;
+
+        let pts;
+        try { pts = JSON.parse(raw); } catch (e) { return null; }
+        if (!Array.isArray(pts) || pts.length < 4) return null;
+
+        // Remove duplicate closing point
+        const first = pts[0];
+        const last = pts[pts.length - 1];
+        const same =
+          Math.abs(first.x - last.x) < 1e-6 &&
+          Math.abs(first.y - last.y) < 1e-6;
+
+        if (same) pts = pts.slice(0, -1);
+        return pts.length >= 3 ? pts : null;
+      }
+
+      function toCenteredWorldPoints(pixelPoints) {
+        let cx = 0, cy = 0;
+        for (const p of pixelPoints) { cx += p.x; cy += p.y; }
+        cx /= pixelPoints.length;
+        cy /= pixelPoints.length;
+
+        return pixelPoints.map((p) => {
+          const x = (p.x - cx) * PIXELS_TO_UNITS;
+          const y = (p.y - cy) * PIXELS_TO_UNITS;
+          return new THREE.Vector2(x, y);
+        });
+      }
+
+      function computeRadialT(points2) {
+        let rMin = Infinity, rMax = -Infinity;
+        const radii = points2.map((v) => {
+          const r = v.length();
+          rMin = Math.min(rMin, r);
+          rMax = Math.max(rMax, r);
+          return r;
+        });
+
+        const mid = (rMin + rMax) / 2;
+        const half = (rMax - rMin) / 2;
+        if (half < 1e-8) return radii.map(() => 0);
+        return radii.map((r) => (r - mid) / half);
+      }
+
+      // ============================================================================
+      // Catmull–Clark subdivision (quad mesh)
+      // ============================================================================
+      function catmullClarkSubdivide(mesh, iterations) {
+        let cur = mesh;
+        for (let it = 0; it < iterations; it++) cur = catmullClarkOnce(cur);
+        return cur;
+      }
+
+      function catmullClarkOnce(mesh) {
+        const P = mesh.positions;
+        const F = mesh.quads;
+
+        const vCount = P.length;
+        const fCount = F.length;
+
+        // Face points
+        const facePoints = new Array(fCount);
+        for (let fi = 0; fi < fCount; fi++) {
+          const [a,b,c,d] = F[fi];
+          const pa = P[a], pb = P[b], pc = P[c], pd = P[d];
+          facePoints[fi] = [
+            (pa[0]+pb[0]+pc[0]+pd[0]) / 4,
+            (pa[1]+pb[1]+pc[1]+pd[1]) / 4,
+            (pa[2]+pb[2]+pc[2]+pd[2]) / 4
+          ];
+        }
+
+        const edgeMap = new Map();
+        const vertFaces = Array.from({ length: vCount }, () => []);
+        const vertEdgeMids = Array.from({ length: vCount }, () => []);
+
+        function edgeKey(i, j) { return (i < j) ? (i + "_" + j) : (j + "_" + i); }
+
+        for (let fi = 0; fi < fCount; fi++) {
+          const q = F[fi];
+          for (let k = 0; k < 4; k++) vertFaces[q[k]].push(fi);
+
+          const edges = [
+            [q[0], q[1]],
+            [q[1], q[2]],
+            [q[2], q[3]],
+            [q[3], q[0]],
+          ];
+
+          for (const [i, j] of edges) {
+            const key = edgeKey(i, j);
+            let e = edgeMap.get(key);
+            if (!e) {
+              e = { a: Math.min(i, j), b: Math.max(i, j), faces: [], edgePointIndex: -1 };
+              edgeMap.set(key, e);
+
+              const pi = P[i], pj = P[j];
+              const mid = [(pi[0]+pj[0])/2, (pi[1]+pj[1])/2, (pi[2]+pj[2])/2];
+              vertEdgeMids[i].push(mid);
+              vertEdgeMids[j].push(mid);
+            }
+            e.faces.push(fi);
+          }
+        }
+
+        // Edge points
+        const edgePoints = [];
+        for (const e of edgeMap.values()) {
+          const pa = P[e.a], pb = P[e.b];
+          if (e.faces.length === 2) {
+            const f0 = facePoints[e.faces[0]];
+            const f1 = facePoints[e.faces[1]];
+            edgePoints.push([
+              (pa[0] + pb[0] + f0[0] + f1[0]) / 4,
+              (pa[1] + pb[1] + f0[1] + f1[1]) / 4,
+              (pa[2] + pb[2] + f0[2] + f1[2]) / 4
+            ]);
+          } else {
+            edgePoints.push([
+              (pa[0] + pb[0]) / 2,
+              (pa[1] + pb[1]) / 2,
+              (pa[2] + pb[2]) / 2
+            ]);
+          }
+          e.edgePointIndex = edgePoints.length - 1;
+        }
+
+        // New vertex positions
+        const newVerts = new Array(vCount);
+        for (let vi = 0; vi < vCount; vi++) {
+          const p = P[vi];
+          const adjacentFaces = vertFaces[vi];
+          const n = adjacentFaces.length || 1;
+
+          let Fx = 0, Fy = 0, Fz = 0;
+          for (const fi of adjacentFaces) {
+            const fp = facePoints[fi];
+            Fx += fp[0]; Fy += fp[1]; Fz += fp[2];
+          }
+          Fx /= n; Fy /= n; Fz /= n;
+
+          const mids = vertEdgeMids[vi];
+          let Rx = 0, Ry = 0, Rz = 0;
+          if (mids.length > 0) {
+            for (const m of mids) { Rx += m[0]; Ry += m[1]; Rz += m[2]; }
+            Rx /= mids.length; Ry /= mids.length; Rz /= mids.length;
+          } else {
+            Rx = p[0]; Ry = p[1]; Rz = p[2];
+          }
+
+          const nx = (Fx + 2*Rx + (n - 3)*p[0]) / n;
+          const ny = (Fy + 2*Ry + (n - 3)*p[1]) / n;
+          const nz = (Fz + 2*Rz + (n - 3)*p[2]) / n;
+
+          newVerts[vi] = [nx, ny, nz];
+        }
+
+        const edgeOffset = newVerts.length;
+        const faceOffset = edgeOffset + edgePoints.length;
+
+        const newPositions = newVerts.concat(edgePoints, facePoints);
+
+        const newQuads = [];
+        for (let fi = 0; fi < fCount; fi++) {
+          const [v0,v1,v2,v3] = F[fi];
+
+          const e01 = edgeOffset + edgeMap.get(edgeKey(v0,v1)).edgePointIndex;
+          const e12 = edgeOffset + edgeMap.get(edgeKey(v1,v2)).edgePointIndex;
+          const e23 = edgeOffset + edgeMap.get(edgeKey(v2,v3)).edgePointIndex;
+          const e30 = edgeOffset + edgeMap.get(edgeKey(v3,v0)).edgePointIndex;
+
+          const fpt = faceOffset + fi;
+
+          newQuads.push([v0, e01, fpt, e30]);
+          newQuads.push([v1, e12, fpt, e01]);
+          newQuads.push([v2, e23, fpt, e12]);
+          newQuads.push([v3, e30, fpt, e23]);
+        }
+
+        return { positions: newPositions, quads: newQuads };
+      }
+
+      function quadMeshToBufferGeometry(mesh) {
+        const positions = mesh.positions;
+        const quads = mesh.quads;
+
+        const posFlat = new Float32Array(positions.length * 3);
+        for (let i = 0; i < positions.length; i++) {
+          const p = positions[i];
+          posFlat[i*3+0] = p[0];
+          posFlat[i*3+1] = p[1];
+          posFlat[i*3+2] = p[2];
+        }
+
+        const indices = new Uint32Array(quads.length * 6);
+        let w = 0;
+        for (let i = 0; i < quads.length; i++) {
+          const [a,b,c,d] = quads[i];
+          indices[w++] = a; indices[w++] = b; indices[w++] = c;
+          indices[w++] = a; indices[w++] = c; indices[w++] = d;
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(posFlat, 3));
+        geo.setIndex(new THREE.BufferAttribute(indices, 1));
+        geo.computeVertexNormals();
+        return geo;
+      }
+
+      function applyShadeSmooth(geometry) {
+        if (!geometry.index) geometry = geometry.toNonIndexed();
+        geometry.computeVertexNormals();
+        geometry.normalizeNormals();
+        return geometry;
+      }
+
+      // ----------------------------------------------------------------------------
+      // Inflate outward by distance, using quad-face normals averaged per vertex.
+      // ----------------------------------------------------------------------------
+      function inflateQuadMeshOutward(mesh, distance) {
+        const P = mesh.positions;
+        const Q = mesh.quads;
+
+        const nx = new Float32Array(P.length);
+        const ny = new Float32Array(P.length);
+        const nz = new Float32Array(P.length);
+
+        for (let qi = 0; qi < Q.length; qi++) {
+          const [a,b,c,d] = Q[qi];
+          const pa = P[a], pb = P[b], pc = P[c], pd = P[d];
+
+          const abx = pb[0] - pa[0], aby = pb[1] - pa[1], abz = pb[2] - pa[2];
+          const adx = pd[0] - pa[0], ady = pd[1] - pa[1], adz = pd[2] - pa[2];
+
+          const fnx = (aby * adz) - (abz * ady);
+          const fny = (abz * adx) - (abx * adz);
+          const fnz = (abx * ady) - (aby * adx);
+
+          nx[a] += fnx; ny[a] += fny; nz[a] += fnz;
+          nx[b] += fnx; ny[b] += fny; nz[b] += fnz;
+          nx[c] += fnx; ny[c] += fny; nz[c] += fnz;
+          nx[d] += fnx; ny[d] += fny; nz[d] += fnz;
+        }
+
+        const newPositions = new Array(P.length);
+        for (let i = 0; i < P.length; i++) {
+          let x = nx[i], y = ny[i], z = nz[i];
+          const len = Math.hypot(x, y, z);
+          if (len > 1e-12) { x /= len; y /= len; z /= len; }
+          else { x = 0; y = 0; z = 1; }
+
+          const p = P[i];
+          newPositions[i] = [ p[0] + x * distance, p[1] + y * distance, p[2] + z * distance ];
+        }
+
+        return { positions: newPositions, quads: mesh.quads };
+      }
+
+      // ============================================================================
+      // Anchor finder (smoothest quarter)
+      // ============================================================================
+      function findSmoothestQuarterCenterIndex(outer2D) {
+        const N = outer2D.length;
+        const t = computeRadialT(outer2D);
+
+        const segLen = new Array(N);
+        let perim = 0;
+        for (let i = 0; i < N; i++) {
+          const j = (i + 1) % N;
+          const dx = outer2D[j].x - outer2D[i].x;
+          const dy = outer2D[j].y - outer2D[i].y;
+          const l = Math.hypot(dx, dy);
+          segLen[i] = l;
+          perim += l;
+        }
+
+        const target = perim / 4;
+
+        let bestStart = 0;
+        let bestScore = Infinity;
+
+        for (let start = 0; start < N; start++) {
+          let len = 0;
+          let end = start;
+          const idxs = [];
+
+          while (len < target && idxs.length < N) {
+            idxs.push(end);
+            len += segLen[end];
+            end = (end + 1) % N;
+            if (end === start) break;
+          }
+
+          let mean = 0;
+          for (const k of idxs) mean += t[k];
+          mean /= idxs.length;
+
+          let varSum = 0;
+          for (const k of idxs) {
+            const d = t[k] - mean;
+            varSum += d * d;
+          }
+          const variance = varSum / idxs.length;
+
+          if (variance < bestScore) {
+            bestScore = variance;
+            bestStart = start;
+          }
+        }
+
+        let half = target / 2;
+        let i = bestStart;
+        while (half > 0) {
+          half -= segLen[i];
+          i = (i + 1) % N;
+        }
+        return i;
+      }
+
+      // ============================================================================
+      // Mesh builder (base cage)
+      // ============================================================================
+      function buildWavyDonutQuadMesh(outer2D) {
+        const N = outer2D.length;
+        const t = computeRadialT(outer2D);
+
+        const outer3 = new Array(N);
+        const inner3 = new Array(N);
+
+        for (let i = 0; i < N; i++) {
+          const p = outer2D[i];
+
+          outer3[i] = new THREE.Vector3(p.x, p.y, OUTER_Z_EXTREME * t[i]);
+          inner3[i] = new THREE.Vector3(
+            p.x * INNER_SCALE,
+            p.y * INNER_SCALE,
+            INNER_Z_EXTREME * t[i]
+          );
+        }
+
+        const positions = [];
+
+        for (let i = 0; i < N; i++) {
+          const v = outer3[i].clone().add(new THREE.Vector3(0,0,+HALF_THICKNESS));
+          positions.push([v.x, v.y, v.z]);
+        }
+        for (let i = 0; i < N; i++) {
+          const v = inner3[i].clone().add(new THREE.Vector3(0,0,+HALF_THICKNESS));
+          positions.push([v.x, v.y, v.z]);
+        }
+        for (let i = 0; i < N; i++) {
+          const v = outer3[i].clone().add(new THREE.Vector3(0,0,-HALF_THICKNESS));
+          positions.push([v.x, v.y, v.z]);
+        }
+        for (let i = 0; i < N; i++) {
+          const v = inner3[i].clone().add(new THREE.Vector3(0,0,-HALF_THICKNESS));
+          positions.push([v.x, v.y, v.z]);
+        }
+
+        const oT = (i) => i;
+        const iT = (i) => N + i;
+        const oB = (i) => 2 * N + i;
+        const iB = (i) => 3 * N + i;
+        const next = (i) => (i + 1) % N;
+
+        const quads = [];
+
+        for (let i = 0; i < N; i++) {
+          const j = next(i);
+          quads.push([ oT(i), oT(j), iT(j), iT(i) ]);
+        }
+
+        for (let i = 0; i < N; i++) {
+          const j = next(i);
+          quads.push([ oB(i), iB(i), iB(j), oB(j) ]);
+        }
+
+        for (let i = 0; i < N; i++) {
+          const j = next(i);
+          quads.push([ oT(i), oB(i), oB(j), oT(j) ]);
+        }
+
+        for (let i = 0; i < N; i++) {
+          const j = next(i);
+          quads.push([ iT(i), iT(j), iB(j), iB(i) ]);
+        }
+
+        return { positions, quads };
+      }
+
+      // ============================================================================
+      // Orientation helper: rotate mesh so anchor "faces" +Z (yaw about Y)
+      // ============================================================================
+      function faceAnchorTowardPositiveZ(mesh, anchorLocalPos) {
+        // direction in XZ plane from origin to anchor point
+        const v = new THREE.Vector3(anchorLocalPos.x, 0, anchorLocalPos.z);
+        if (v.lengthSq() < 1e-12) return 0;
+
+        v.normalize();
+        // yaw that would rotate v onto +Z
+        const yaw = Math.atan2(v.x, v.z);
+        // Set mesh yaw to "cancel" that angle (deterministic)
+        mesh.rotation.y = -yaw;
+        return -yaw;
+      }
+
+      // ============================================================================
+      // Jump ring management
+      // ============================================================================
+      function createJumpRing() {
+        if (!donutMesh) return;
+
+        removeJumpRing();
+
+        const geo = new THREE.TorusGeometry(EARRING_LOOP_MAJOR, EARRING_LOOP_TUBE, 18, 48);
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0xd9d9d9,
+          metalness: 1.0,
+          roughness: 0.12,
+          flatShading: false
+        });
+
+        earringLoopMesh = new THREE.Mesh(geo, mat);
+
+        // base position stored in DONUT LOCAL space
+        ringBasePosLocal = anchorPosLocal.clone().add(new THREE.Vector3(DEFAULT_RING_X, DEFAULT_RING_LIFT, 0));
+
+        // put ring in the scene (NOT as a child of donutMesh)
+        scene.add(earringLoopMesh);
+
+        // set an initial orientation for the ring (world-fixed)
+        earringLoopMesh.rotation.set(0, 0, 0);
+
+        // apply initial placement
+        updateJumpRingFromSliders();
+      }
+
+      function removeJumpRing() {
+        if (earringLoopMesh) {
+          scene.remove(earringLoopMesh);
+          if (earringLoopMesh.geometry) earringLoopMesh.geometry.dispose();
+          if (earringLoopMesh.material) earringLoopMesh.material.dispose();
+        }
+        earringLoopMesh = null;
+        ringBasePosLocal = null;
+      }
+
+      function bakeFrozenRingIntoLocalBase() {
+        if (!earringLoopMesh || !donutMesh || !ringBasePosLocal) return;
+
+        // current slider offsets (local donut space)
+        const xOff = parseFloat(ringX.value);
+        const yOff = parseFloat(ringY.value);
+        const zOff = parseFloat(ringZ.value);
+
+        // Convert frozen WORLD position into DONUT LOCAL position
+        const localPos = donutMesh.worldToLocal(frozenRingWorldPos.clone());
+
+        // ringBasePosLocal is the "zero-offset" local position
+        ringBasePosLocal = localPos.clone().sub(new THREE.Vector3(xOff, yOff, zOff));
+      }
+
+
+      function updateJumpRingFromSliders() {
+        if (!earringLoopMesh || !ringBasePosLocal || !donutMesh) return;
+
+        const xOff = parseFloat(ringX.value);
+        const yOff = parseFloat(ringY.value);
+        const zOff = parseFloat(ringZ.value);
+
+        const localPos = ringBasePosLocal.clone()
+          .add(new THREE.Vector3(xOff, yOff, zOff));
+
+        const worldPos = donutMesh.localToWorld(localPos.clone());
+        earringLoopMesh.position.copy(worldPos);
+
+        // ring orientation (world-fixed)
+        const ry = THREE.MathUtils.degToRad(parseFloat(ringRotY.value));
+        earringLoopMesh.rotation.set(0, ry, 0);
+      }
+
+      // ============================================================================
+      // Customize mode (toggle)
+      // ============================================================================
+      function setToggleUI(on) {
+        if (on) toggleVisual.classList.add("on");
+        else toggleVisual.classList.remove("on");
+        toggleVisual.setAttribute("aria-checked", on ? "true" : "false");
+      }
+
+      function setPanelVisible(on) {
+        customPanel.style.display = on ? "block" : "none";
+      }
+
+      function setRingDependentControlsEnabled(enabled) {
+        meshRotZ.disabled = !enabled;
+        ringY.disabled = !enabled;
+        ringZ.disabled = !enabled;
+        ringX.disabled = !enabled;
+        ringRotY.disabled = !enabled;
+
+        saveBtn.disabled = !enabled;
+        cancelBtn.disabled = !enabled;
+
+        // Slight UI hint: dim rows via opacity
+        const rows = [
+          meshRotZ.closest(".row"),
+          ringY.closest(".row"),
+          ringZ.closest(".row"),
+          ringX.closest(".row"),
+          ringRotY.closest(".row"),
+          saveBtn.closest(".actions")
+        ];
+        for (const r of rows) {
+          if (!r) continue;
+          r.style.opacity = enabled ? "1" : "0.45";
+        }
+      }
+
+      function enterCustomizeMode() {
+        if (!donutMesh) return;
+
+        customizing = true;
+        setToggleUI(true);
+        setPanelVisible(true);
+
+        // Snapshot for cancel
+        snapshotBeforeCustomize = {
+          ringEnabled: saved.ringEnabled,
+          meshRotZDeg: saved.meshRotZDeg,
+          ringYOffset: saved.ringYOffset,
+          ringZOffset: saved.ringZOffset,
+          ringXOffset: saved.ringXOffset,
+          ringRotYDeg: saved.ringRotYDeg,
+          meshRot: donutMesh.rotation.clone()
+        };
+
+        // Face +Z
+        if (anchorPosLocal) faceAnchorTowardPositiveZ(donutMesh, anchorPosLocal);
+
+        // Initialize UI values from saved state
+        addRingChk.checked = saved.ringEnabled;
+        meshRotZ.value = String(saved.meshRotZDeg);
+        ringY.value = String(saved.ringYOffset);
+        ringZ.value = String(saved.ringZOffset);
+        ringX.value = String(saved.ringZOffset);
+        ringRotY.value = String(saved.ringRotYDeg);
+
+        if (saved.ringEnabled) {
+          createJumpRing();
+          updateJumpRingFromSliders();
+          setRingDependentControlsEnabled(true);
+        } else {
+          removeJumpRing();
+          setRingDependentControlsEnabled(false);
+        }
+      }
+
+      function exitCustomizeMode() {
+        customizing = false;
+        setToggleUI(false);
+        setPanelVisible(false);
+
+        // Ensure ring matches saved state outside customize:
+        if (!saved.ringEnabled) removeJumpRing();
+      }
+
+      // Buttons: Save / Cancel (only active when ring is enabled, per your spec)
+      function saveChanges() {
+        if (!donutMesh) return;
+
+        // Save ring + sliders
+        saved.ringEnabled = addRingChk.checked;
+
+        if (saved.ringEnabled) {
+          saved.meshRotZDeg = parseFloat(meshRotZ.value);
+          saved.ringYOffset = parseFloat(ringY.value);
+          saved.ringZOffset = parseFloat(ringZ.value);
+          saved.ringXOffset = parseFloat(ringX.value);
+          saved.ringRotYDeg = parseFloat(ringRotY.value);
+        } else {
+          saved.meshRotZDeg = 0;
+          saved.ringYOffset = 0;
+          saved.ringZOffset = 0;
+          saved.ringXOffset = 0;
+          saved.ringRotYDeg = 0;
+        }
+
+        exitCustomizeMode();
+      }
+
+      function cancelChanges() {
+        if (!donutMesh || !snapshotBeforeCustomize) return;
+
+        // Revert saved values
+        saved.ringEnabled = snapshotBeforeCustomize.ringEnabled;
+        saved.meshRotZDeg = snapshotBeforeCustomize.meshRotZDeg;
+        saved.ringYOffset = snapshotBeforeCustomize.ringYOffset;
+        saved.ringZOffset = snapshotBeforeCustomize.ringZOffset;
+        saved.ringXOffset = snapshotBeforeCustomize.ringXOffset;
+        saved.ringRotYDeg = snapshotBeforeCustomize.ringRotYDeg;
+
+        // Revert mesh rotation (exact)
+        donutMesh.rotation.copy(snapshotBeforeCustomize.meshRot);
+
+        // Revert ring
+        if (saved.ringEnabled) {
+          createJumpRing();
+          // Restore slider UI values (even though panel will close)
+          meshRotZ.value = String(saved.meshRotZDeg);
+          ringY.value = String(saved.ringYOffset);
+          ringZ.value = String(saved.ringZOffset);
+          ringX.value = String(saved.ringXOffset);
+          ringRotY.value = String(saved.ringRotYDeg);
+          updateJumpRingFromSliders();
+        } else {
+          removeJumpRing();
+        }
+
+        exitCustomizeMode();
+      }
+
+      // Toggle click
+      customToggle.addEventListener("click", () => {
+        if (!donutMesh) return;
+        if (customizing) {
+          exitCustomizeMode();
+        } else {
+          enterCustomizeMode();
+        }
+      });
+
+      addRingChk.addEventListener("change", () => {
+        if (!customizing) return;
+
+        if (addRingChk.checked) {
+          createJumpRing();
+          // Enable controls + reset sliders to saved values (or zero if first time)
+          ringY.value = String(saved.ringYOffset || 0);
+          ringZ.value = String(saved.ringZOffset || 0);
+          ringX.value = String(saved.ringXOffset || 0);
+          ringRotY.value = String(saved.ringRotYDeg || 0);
+          meshRotZ.value = String(saved.meshRotZDeg || 0);
+          updateJumpRingFromSliders();
+          setRingDependentControlsEnabled(true);
+        } else {
+          removeJumpRing();
+
+          // Reset working sliders to 0 (visual)
+          meshRotZ.value = "0";
+          ringY.value = "0";
+          ringZ.value = "0";
+          ringX.value = "0";
+          ringRotY.value = "0";
+
+          setRingDependentControlsEnabled(false);
+        }
+      });
+
+
+
+      ringX.addEventListener("input", () => {
+        if (!customizing || !addRingChk.checked) return;
+        updateJumpRingFromSliders();
+      });
+
+      ringY.addEventListener("input", () => {
+        if (!customizing || !addRingChk.checked) return;
+        updateJumpRingFromSliders();
+      });
+
+      ringZ.addEventListener("input", () => {
+        if (!customizing || !addRingChk.checked) return;
+        updateJumpRingFromSliders();
+      });
+
+      ringRotY.addEventListener("input", () => {
+        if (!customizing || !addRingChk.checked) return;
+        updateJumpRingFromSliders();
+      });
+
+
+      meshRotZ.addEventListener("pointerdown", () => {
+        if (!earringLoopMesh) return;
+        freezeRing = true;
+        frozenRingWorldPos.copy(earringLoopMesh.position);
+        frozenRingWorldRot.copy(earringLoopMesh.rotation);
+      });
+
+      meshRotZ.addEventListener("input", () => {
+        if (!customizing || !addRingChk.checked || !donutMesh) return;
+
+        const deg = parseFloat(meshRotZ.value);
+        donutMesh.rotation.z = THREE.MathUtils.degToRad(deg);
+
+        // keep the ring frozen during the drag
+        if (earringLoopMesh) {
+          // (position/rot are already frozen; nothing else needed here)
+        }
+      });
+
+      window.addEventListener("pointerup", () => {
+        if (!freezeRing) return;
+
+        // Bake the frozen world position into the ring's local base so it won't snap.
+        bakeFrozenRingIntoLocalBase();
+
+        freezeRing = false;
+      });
+
+
+
+      window.addEventListener("pointerup", () => {
+        freezeRing = false;
+      });
+
+
+      saveBtn.addEventListener("click", () => {
+        if (saveBtn.disabled) return;
+        saveChanges();
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        if (cancelBtn.disabled) return;
+        cancelChanges();
+      });
+
+      // ============================================================================
+      // Build / rebuild the mesh in the scene
+      // ============================================================================
+      function rebuildMesh() {
+        showError("");
+
+        const pts2D_px = load2DPoints();
+        if (!pts2D_px) {
+          showError(
+            "No valid 2D loop found.\n\n" +
+            "Go back to the recording page and record a ring first.\n" +
+            "Expected localStorage key: waveformPoints"
+          );
+          return;
+        }
+
+        const outer2D = toCenteredWorldPoints(pts2D_px);
+
+        let geometry;
+        let baseQuadMesh, inflatedQuadMesh;
+
+        try {
+          baseQuadMesh = buildWavyDonutQuadMesh(outer2D);
+          inflatedQuadMesh = inflateQuadMeshOutward(baseQuadMesh, INFLATE_OUTWARD);
+
+          // Compute anchor: ALWAYS top-center of the donut (local space)
+          const tempSubdiv = catmullClarkSubdivide(inflatedQuadMesh, CATMULL_CLARK_LEVELS);
+          const tempGeo = quadMeshToBufferGeometry(tempSubdiv);
+          tempGeo.computeBoundingBox();
+
+          const topY = tempGeo.boundingBox.max.y;
+          // centered in X/Z, above donut
+          anchorPosLocal = new THREE.Vector3(0, topY, 0);
+
+          // keep this defined (even if you don't use it elsewhere)
+          anchorOutDirLocal = new THREE.Vector3(0, 0, 1);
+
+          // now continue using tempGeo as your final geometry
+          geometry = applyShadeSmooth(tempGeo);
+
+
+          const subdivQuadMesh = catmullClarkSubdivide(inflatedQuadMesh, CATMULL_CLARK_LEVELS);
+          geometry = quadMeshToBufferGeometry(subdivQuadMesh);
+          geometry = applyShadeSmooth(geometry);
+        } catch (e) {
+          showError("Subdivision failed.\nDetails:\n" + (e && e.message ? e.message : String(e)));
+          return;
+        }
+
+        // Replace existing mesh
+        if (donutMesh) {
+          // remove ring first
+          removeJumpRing();
+
+          donutMesh.geometry.dispose();
+          donutMesh.material.dispose();
+          scene.remove(donutMesh);
+          donutMesh = null;
+        }
+
+        const material = new THREE.MeshStandardMaterial({
+          color: 0xd9d9d9,
+          metalness: 1.0,
+          roughness: 0.12,
+          flatShading: false
+        });
+
+        donutMesh = new THREE.Mesh(geometry, material);
+        donutMesh.rotation.set(0, 0, 0);
+
+        // Apply saved state outside customize:
+        donutMesh.rotation.z = THREE.MathUtils.degToRad(saved.meshRotZDeg || 0);
+
+        // Ensure no ring by default unless user previously saved it
+        if (saved.ringEnabled) {
+          createJumpRing();
+          // Apply saved offsets even outside customize mode
+          ringY.value = String(saved.ringYOffset || 0);
+          ringZ.value = String(saved.ringZOffset || 0);
+          ringX.value = String(saved.ringXOffset || 0);
+          ringRotY.value = String(saved.ringRotYDeg || 0);
+          updateJumpRingFromSliders();
+        } else {
+          removeJumpRing();
+        }
+
+        scene.add(donutMesh);
+
+        // Intro spin
+        spinVelocity = Math.PI * 2 * 4;
+        spinVelocity /= 60;
+        spinActive = true;
+
+        // Auto-frame camera
+        geometry.computeBoundingBox();
+        const box = geometry.boundingBox;
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+
+        const dist = maxDim * 2.2;
+        camera.position.set(0, maxDim * 0.9, dist);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        // If we were in customize mode when rebuilding, re-enter it cleanly
+        if (customizing) {
+          exitCustomizeMode();
+          enterCustomizeMode();
+        }
+      }
+
+      // ============================================================================
+      // Export STL
+      // ============================================================================
+      exportBtn.addEventListener("click", () => exportSTL([donutMesh, earringLoopMesh]));
+
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function exportSTL(objects, { binary = false } = {}) {
+        if (!objects) {
+          showError("No mesh available to export. Build the mesh first.");
+          return;
+        }
+
+        const list = Array.isArray(objects) ? objects : [objects];
+        const valid = list.filter(o => o);
+
+        if (valid.length === 0) {
+          showError("No mesh available to export. Build the mesh first.");
+          return;
+        }
+
+        if (donutMesh) donutMesh.updateMatrixWorld(true);
+        if (earringLoopMesh) earringLoopMesh.updateMatrixWorld(true);
+
+
+        const tempScene = new THREE.Scene();
+
+        for (const obj of valid) {
+          const clone = obj.clone(true);
+
+          // ensure transforms are up to date
+          clone.updateMatrixWorld(true);
+
+          // IMPORTANT: if the object has an indexed BufferGeometry, STLExporter is fine,
+          // but ensure world matrix is respected:
+          tempScene.add(clone);
+        }
+
+        const exporter = new THREE.STLExporter();
+        const result = exporter.parse(tempScene, { binary });
+
+        const timestamp = (new Date()).toISOString().replace(/[:.]/g, "-");
+        const filename = `Heartz_${timestamp}.stl`;
+
+        if (binary && result instanceof ArrayBuffer) {
+          const blob = new Blob([result], { type: "application/octet-stream" });
+          downloadBlob(blob, filename);
+        } else {
+          const blob = new Blob([result], { type: "text/plain" });
+          downloadBlob(blob, filename);
+        }
+      }
+
+
+      // ============================================================================
+      // Animation
+      // ============================================================================
+      function animate() {
+        requestAnimationFrame(animate);
+
+        if (spinActive && donutMesh) {
+          donutMesh.rotation.y += spinVelocity;
+          spinVelocity *= spinDamping;
+
+          if (Math.abs(spinVelocity) < 0.0001) {
+            spinVelocity = 0;
+            spinActive = false;
+          }
+        }
+
+        // keep ring tracking the donut attachment point (and rotation slider) continuously
+        if (earringLoopMesh) {
+          if (freezeRing) {
+            earringLoopMesh.position.copy(frozenRingWorldPos);
+            earringLoopMesh.rotation.copy(frozenRingWorldRot);
+          } else {
+            updateJumpRingFromSliders();
+          }
+        }
+
+
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // Start
+      setToggleUI(false);
+      setPanelVisible(false);
+      setRingDependentControlsEnabled(false);
+
+      animate(); // start render loop (fine even without mesh)
+
+      // Let the browser paint the loader first, THEN do heavy EXR decode.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          loadExrBackgroundThenStart();
+        });
+      });
+
+    </script>
+  </body>
+
+
+
+</html>

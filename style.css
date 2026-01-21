@@ -1,0 +1,59 @@
+body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+    font-family: sans-serif;
+}
+
+.container {
+    text-align: center;
+}
+
+/* Style for the record button */
+#recordButton {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    border: none;
+    border-radius: 50px;
+    background-color: #ff4d4d; /* Red for record */
+    color: white;
+    cursor: pointer;
+    margin-bottom: 2em;
+    transition: all 0.3s ease;
+}
+
+#recordButton:hover {
+    background-color: #ff1a1a;
+}
+
+#recordButton.recording {
+    background-color: #4d4d4d; /* Grey when active */
+}
+
+/* Style for the canvas. The key is making it a square. */
+#visualizerCanvas {
+    display: block;
+    margin: 0 auto;
+    border: 2px solid #333;
+    border-radius: 50%; /* This turns the square canvas into a circle */
+    background-color: #fff;
+}
+
+/* ... (previous styles remain the same) ... */
+
+/* Style for the large countdown number */
+#countdownDisplay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10rem; /* Very large text */
+    font-weight: bold;
+    color: rgba(255, 77, 77, 0.8); /* Semi-transparent red */
+    z-index: 10; /* Make sure it appears above the canvas */
+    pointer-events: none; /* Clicks pass through it to the button below */
+    display: none; /* Hidden by default */
+}
